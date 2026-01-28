@@ -21,10 +21,21 @@ LIMITS_FILE = Path("limits.json")
 
 START_BONUS = 200
 COOLDOWN_SECONDS = 3600      # 1 час
-DAILY_LIMIT = 50             # спинов в день
+DAILY_LIMIT = 10             # спинов в день
 
 
 # ---------- helpers ----------
+def spins_left_today(user_id: int) -> int:
+    limits = load_json(LIMITS_FILE, {})
+    info = limits.get(str(user_id), {
+        "date": str(date.today()),
+        "count": 0
+    })
+
+    if info.get("date") != str(date.today()):
+        return DAILY_LIMIT
+
+    return max(0, DAILY_LIMIT - info.get("count", 0))
 
 def is_locked() -> bool:
     s = load_json(SETTINGS_FILE, {"locked": False})
@@ -147,9 +158,18 @@ async def start(update, context):
 
 
 async def balance_cmd(update, context):
+    user_id = update.effective_user.id
+    user = str(user_id)
+
     balances = load_json(BALANCES_FILE, {})
-    bal = balances.get(uid(update), 0)
-    await update.message.reply_text(f"💰 Баланс: {bal}")
+    bal = balances.get(user, 0)
+
+    left = spins_left_today(user_id)
+
+    await update.message.reply_text(
+        f"💰 Твой баланс: {bal}\n"
+        f"🎟 Круток сегодня осталось: {left}"
+    )
 
 async def roll(update, context):
     if is_locked() and not is_dev(update):
@@ -275,8 +295,10 @@ async def roll(update, context):
     info["count"] += 1
     limits[user] = info
     save_json(LIMITS_FILE, limits)
+remaining = spins_left_today(update.effective_user.id)
+extra_line = f"\n🎟 Осталось круток сегодня: <b>{remaining}</b>"
 
-    await msg.edit_text(text, parse_mode=ParseMode.HTML)
+    await msg.edit_text(text + extra_line, parse_mode=ParseMode.HTML)
 
 def main():
     app = Application.builder().token(TOKEN).build()
