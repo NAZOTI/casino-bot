@@ -257,7 +257,7 @@ async def roll(update, context):
 
     a, b, c = final_a, final_b, final_c
 
-        # ---------- результат ----------
+            # ---------- результат ----------
     if a == b == c:
         profit = bet * 5
     elif a == b or a == c or b == c:
@@ -295,8 +295,10 @@ async def roll(update, context):
     info["count"] += 1
     limits[user] = info
     save_json(LIMITS_FILE, limits)
-remaining = spins_left_today(update.effective_user.id)
-extra_line = f"\n🎟 Осталось круток сегодня: <b>{remaining}</b>"
+
+    # сколько осталось круток сегодня
+    remaining = max(0, DAILY_LIMIT - info["count"])
+    extra_line = f"\n🎟 Осталось круток сегодня: <b>{remaining}</b>"
 
     await msg.edit_text(text + extra_line, parse_mode=ParseMode.HTML)
 
