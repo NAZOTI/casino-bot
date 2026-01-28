@@ -280,13 +280,13 @@ async def roll(update, context):
 
 def main():
     app = Application.builder().token(TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("balance", balance_cmd))
     app.add_handler(CommandHandler("roll", roll))
-app.add_handler(CommandHandler("lock", lock_cmd))
-app.add_handler(CommandHandler("unlock", unlock_cmd))
-
     app.add_handler(CommandHandler("myid", myid))
+    app.add_handler(CommandHandler("lock", lock_cmd))
+    app.add_handler(CommandHandler("unlock", unlock_cmd))
     print("Бот запущен")
     app.run_polling()
 import threading
