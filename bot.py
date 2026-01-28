@@ -137,10 +137,9 @@ if context.args:
     try:
         bet = int(context.args[0])
     except ValueError:
-        await update.message.reply_text(
-            "❌ Ставка должна быть числом. Пример: /roll 25"
-        )
-        return
+    await update.message.reply_text("❌ Ставка должна быть числом. Пример: /roll 25")
+    return
+
 else:
     bet = 10
 
