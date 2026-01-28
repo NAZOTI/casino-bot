@@ -16,6 +16,7 @@ DEV_ID = os.getenv("DEV_ID")  # твой id (для теста без тайме
 EMOJIS = ["🍒", "🍋", "🍇", "🍉", "⭐️", "🔔", "💎", "🍀", "7️⃣"]
 
 BALANCES_FILE = Path("balances.json")
+SETTINGS_FILE = Path("settings.json")
 LIMITS_FILE = Path("limits.json")
 
 START_BONUS = 200
@@ -24,6 +25,15 @@ DAILY_LIMIT = 50             # спинов в день
 
 
 # ---------- helpers ----------
+
+def is_locked() -> bool:
+    s = load_json(SETTINGS_FILE, {"locked": False})
+    return bool(s.get("locked", False))
+
+def set_locked(value: bool):
+    s = load_json(SETTINGS_FILE, {"locked": False})
+    s["locked"] = bool(value)
+    save_json(SETTINGS_FILE, s)
 
 def load_json(path, default):
     if not path.exists():
@@ -100,6 +110,19 @@ async def animate_spin(msg, final_triplet):
 async def myid(update, context):
     await update.message.reply_text(f"🆔 Твой ID: {uid(update)}")
 
+async def lock_cmd(update, context):
+    if not is_dev(update):
+        await update.message.reply_text("⛔ Нет доступа")
+        return
+    set_locked(True)
+    await update.message.reply_text("🔒 Бот на обслуживании. Игры временно отключены.")
+
+async def unlock_cmd(update, context):
+    if not is_dev(update):
+        await update.message.reply_text("⛔ Нет доступа")
+        return
+    set_locked(False)
+    await update.message.reply_text("🔓 Бот включён. Можно крутить!")
 
 async def start(update, context):
     balances = load_json(BALANCES_FILE, {})
@@ -129,6 +152,10 @@ async def balance_cmd(update, context):
     await update.message.reply_text(f"💰 Баланс: {bal}")
 
 async def roll(update, context):
+    if is_locked() and not is_dev(update):
+        await update.message.reply_text("🔒 Бот на обслуживании. Попробуй позже.")
+        return
+
     # ставка
     if context.args:
         try:
@@ -256,10 +283,29 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("balance", balance_cmd))
     app.add_handler(CommandHandler("roll", roll))
+app.add_handler(CommandHandler("lock", lock_cmd))
+app.add_handler(CommandHandler("unlock", unlock_cmd))
+
     app.add_handler(CommandHandler("myid", myid))
     print("Бот запущен")
     app.run_polling()
+import threading
+from flask import Flask
+
+web = Flask(__name__)
+
+@web.get("/")
+def home():
+    return "OK", 200
+
+def run_web():
+    port = int(os.environ.get("PORT", "10000"))
+    web.run(host="0.0.0.0", port=port)
+
+def run_bot():
+    main()
 
 
 if __name__ == "__main__":
-    main()
+    threading.Thread(target=run_web, daemon=True).start()
+    run_bot()
