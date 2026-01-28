@@ -131,7 +131,21 @@ async def roll(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
     bal = get_balance(user, dev)
+
+    # ставка: /roll -> 10, /roll 25 -> 25
+if context.args:
+    try:
+        bet = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("❌ Ставка должна быть числом. Пример: /roll 25")
+        return
+else:
     bet = 10
+
+if bet < 10 or bet > 100:
+    await update.message.reply_text("❌ Ставка должна быть от 10 до 100")
+    return
+
 
     a, b, c = random.choices(EMOJIS, k=3)
 
